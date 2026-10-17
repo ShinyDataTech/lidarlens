@@ -1,62 +1,97 @@
 [build-system]
-requires = ["setuptools>=68.0", "setuptools-scm>=8.0"]
+requires = ["setuptools>=68.0", "wheel", "pybind11>=2.10.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "lidarlens"
-version = "0.1.4"
-description = "A Python package for 3D LiDAR point cloud processing, analysis, terrain modelling, and visualization."
+version = "0.2.0"
+description = "A Production-Grade 3D Point Cloud Perception, Odometry, Mapping, and Agentic AI Framework."
 readme = "README.md"
 license = {text = "MIT"}
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [
     {name = "Wei Liu"},
 ]
 keywords = [
-    "lidar", "point-cloud", "las", "laz", "copc",
-    "geospatial", "3d", "terrain", "dem", "dtm", "dsm",
-    "open3d", "remote-sensing",
+    "lidar", "point-cloud", "robotics", "slam", "odometry",
+    "gicp", "octomap", "pointpillars", "agentic-ai", "ros2",
+    "sim-to-real", "scene-graph", "autonomous-driving"
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: C++",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Scientific/Engineering :: GIS",
     "Topic :: Scientific/Engineering :: Image Processing",
 ]
 
 dependencies = [
-    "open3d>=0.17.0",
-    "laspy[lazrs]>=2.4.0",
-    "numpy>=1.22.0,<2.0.0",
+    "numpy>=1.22.0",
     "scipy>=1.9.0",
-    "pyproj>=3.4.0",
-    "matplotlib>=3.5.0",
+    "pyyaml>=6.0",
+    "pydantic>=2.0.0",
 ]
 
 [project.optional-dependencies]
-dl = ["torch>=2.0.0", "h5py>=3.7.0", "scikit-learn>=1.1.0"]
-cli = ["click>=8.0.0"]
-all = ["lidarlens[dl,cli]", "rasterio>=1.3.0", "pandas>=1.5.0"]
+cv = [
+    "opencv-python>=4.5.0",
+    "matplotlib>=3.5.0",
+]
+torch = [
+    "torch>=2.0.0",
+    "scikit-learn>=1.1.0",
+]
+agent = [
+    "pydantic>=2.0.0",
+    "networkx>=2.8.0",
+]
+onnx = [
+    "onnx>=1.12.0",
+    "onnxruntime>=1.14.0",
+]
+open3d = [
+    "open3d>=0.17.0",
+]
+las = [
+    "laspy[lazrs]>=2.4.0",
+    "pyproj>=3.4.0",
+]
+cli = [
+    "click>=8.0.0",
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "mypy>=1.0.0",
+    "black>=23.0.0",
+]
+all = [
+    "lidarlens[cv,torch,agent,onnx,las,cli,dev]",
+]
 
 [project.scripts]
 lidarlens = "lidarlens.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/lidarlens/pylidarlens"
-Documentation = "https://github.com/lidarlens/pylidarlens#readme"
-Repository = "https://github.com/lidarlens/pylidarlens"
-Issues = "https://github.com/lidarlens/pylidarlens/issues"
+Homepage = "https://github.com/ShinyDataTech/lidarlens"
+Documentation = "https://github.com/ShinyDataTech/lidarlens#readme"
+Repository = "https://github.com/ShinyDataTech/lidarlens"
+Issues = "https://github.com/ShinyDataTech/lidarlens/issues"
 
 [tool.setuptools.packages.find]
-include = ["lidarlens*"]
+include = ["lidarlens*", "pylidarlens*"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests/test_lidarlens"]
+testpaths = ["tests"]
 addopts = "-v --tb=short"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::UserWarning",
+]

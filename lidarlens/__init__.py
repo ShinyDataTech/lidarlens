@@ -1,38 +1,56 @@
-"""
-LidarLens — A Python package for 3D LiDAR point cloud processing, analysis,
-terrain modelling, and visualization.
+"""LidarLens — Production-Grade 3D Point Cloud Perception, Odometry, Mapping, and Agentic AI.
 
-Usage::
+Curriculum-aligned with "Python三维空间感知与机器人视觉：从LiDAR工程到Agentic AI实战".
 
+Quick Start:
     import lidarlens as ll
 
-    # Read a point cloud
-    pcd, header, vlrs, wkt = ll.read("input.laz")
+    # Zero-copy memory buffer & streaming
+    buffer = ll.LidarBuffer(capacity=100_000)
+    streamer = ll.Streamer("data/kitti/velodyne", format="kitti")
 
-    # Quick statistics
-    stats = ll.stats(pcd)
+    # Sliding-window temporal pipeline (>=30 Hz)
+    pipeline = ll.TemporalPipeline(window_size=5)
+    pipeline.add(ll.filters.VoxelDownsample(voxel_size=0.1))
+    pipeline.add(ll.filters.DynamicTemporalSOR(base_neighbors=30, base_std_ratio=2.0))
 
-    # Preprocessing
-    pcd_clean = ll.denoise(pcd)
-    pcd_down = ll.downsample(pcd, voxel_size=0.5)
-
-    # Segmentation
-    ground, non_ground, plane = ll.extract_ground(pcd)
-
-    # Terrain
-    dtm, meta = ll.generate_dtm(ground)
-    dsm, meta = ll.generate_dsm(pcd)
-
-    # Save
-    ll.save(pcd, "output.laz")
+    for raw_frame in streamer:
+        cleaned = pipeline.process(raw_frame)
 """
 
 from lidarlens._version import __version__
 
-# ── I/O ──────────────────────────────────────────────────────────────────────
-from lidarlens.io import read, save, read_header, read_bounds
+# ── Core Data Structures (Chapters 2 & 3) ───────────────────────────────────
+from lidarlens.core import LidarBuffer, LidarFrame
+from lidarlens.pipeline import TemporalPipeline, RingBuffer
+from lidarlens.benchmark import LidarLensBenchmark
 
-# ── Preprocessing ────────────────────────────────────────────────────────────
+# ── Submodules ──────────────────────────────────────────────────────────────
+from lidarlens import filters
+from lidarlens import terrain
+from lidarlens import geometry
+from lidarlens import cluster
+from lidarlens import registration
+from lidarlens import mapping
+from lidarlens import augment
+from lidarlens import models
+from lidarlens import sim2real
+from lidarlens import scenegraph
+from lidarlens import agent
+from lidarlens import deploy
+from lidarlens import ros2
+from lidarlens import vis
+from lidarlens import dataset
+from lidarlens import io
+
+# Top-level direct streaming & pipeline access
+from lidarlens.io.streamer import Streamer
+from lidarlens.filters.downsample import VoxelDownsample
+from lidarlens.filters.sor import DynamicTemporalSOR, StatisticalOutlierRemoval
+from lidarlens.registration.gicp import LowLatencyGICP
+
+# ── Legacy Geospatial Functions (Backward Compatibility) ─────────────────────
+from lidarlens.io.las_io import read, save, read_header, read_bounds
 from lidarlens.preprocessing import (
     voxel_downsample,
     uniform_downsample,
@@ -41,21 +59,8 @@ from lidarlens.preprocessing import (
     remove_statistical_outliers,
     remove_radius_outliers,
 )
-
-# Convenience alias
 downsample = voxel_downsample
 
-# ── Filtering ────────────────────────────────────────────────────────────────
-from lidarlens.filtering import (
-    crop_by_bounds,
-    filter_by_elevation,
-    filter_by_classification,
-    filter_by_return_number,
-    filter_by_intensity,
-    crop_by_polygon,
-)
-
-# ── Segmentation ─────────────────────────────────────────────────────────────
 from lidarlens.segmentation import (
     segment_plane,
     extract_ground,
@@ -63,32 +68,6 @@ from lidarlens.segmentation import (
     extract_clusters,
     segment_heuristic,
 )
-
-# ── Terrain ──────────────────────────────────────────────────────────────────
-from lidarlens.terrain import (
-    generate_dtm,
-    generate_dsm,
-    generate_chm,
-    generate_contours,
-    hillshade,
-    slope_map,
-    aspect_map,
-)
-
-# ── Geometry ─────────────────────────────────────────────────────────────────
-from lidarlens.geometry import (
-    estimate_normals,
-    orient_normals,
-    generate_mesh,
-    translate,
-    scale,
-    rotate,
-    register_icp,
-    compute_convex_hull,
-    voxelize,
-)
-
-# ── Analysis ─────────────────────────────────────────────────────────────────
 from lidarlens.analysis import (
     compute_statistics,
     elevation_histogram,
@@ -98,11 +77,8 @@ from lidarlens.analysis import (
     cross_section,
     compute_volume,
 )
-
-# Convenience alias
 stats = compute_statistics
 
-# ── Classification ───────────────────────────────────────────────────────────
 from lidarlens.classification import (
     ASPRS_CLASSES,
     reclassify_in_polygon,
@@ -111,56 +87,60 @@ from lidarlens.classification import (
     merge_classes,
 )
 
-# ── Export ────────────────────────────────────────────────────────────────────
-from lidarlens.export import (
-    to_csv,
-    to_ply,
-    to_pcd,
-    dem_to_png,
-    dem_to_geotiff,
-    dem_to_csv,
-    to_numpy,
-)
-
-# ── CRS ──────────────────────────────────────────────────────────────────────
-from lidarlens.crs import (
-    create_wkt_vlr,
-    transform_bounds,
-    transform_coordinates,
-    detect_crs,
-)
-
 __all__ = [
     "__version__",
-    # I/O
-    "read", "save", "read_header", "read_bounds",
-    # Preprocessing
-    "voxel_downsample", "uniform_downsample", "random_downsample",
-    "denoise", "downsample",
-    "remove_statistical_outliers", "remove_radius_outliers",
-    # Filtering
-    "crop_by_bounds", "filter_by_elevation", "filter_by_classification",
-    "filter_by_return_number", "filter_by_intensity", "crop_by_polygon",
-    # Segmentation
-    "segment_plane", "extract_ground", "cluster_dbscan",
-    "extract_clusters", "segment_heuristic",
-    # Terrain
-    "generate_dtm", "generate_dsm", "generate_chm",
-    "generate_contours", "hillshade", "slope_map", "aspect_map",
-    # Geometry
-    "estimate_normals", "orient_normals", "generate_mesh",
-    "translate", "scale", "rotate",
-    "register_icp", "compute_convex_hull", "voxelize",
-    # Analysis
-    "compute_statistics", "stats", "elevation_histogram",
-    "compare_clouds", "point_density", "roughness",
-    "cross_section", "compute_volume",
-    # Classification
-    "ASPRS_CLASSES", "reclassify_in_polygon", "reclassify_by_elevation",
-    "get_class_distribution", "merge_classes",
-    # Export
-    "to_csv", "to_ply", "to_pcd",
-    "dem_to_png", "dem_to_geotiff", "dem_to_csv", "to_numpy",
-    # CRS
-    "create_wkt_vlr", "transform_bounds", "transform_coordinates", "detect_crs",
+    # Core
+    "LidarBuffer",
+    "LidarFrame",
+    "TemporalPipeline",
+    "RingBuffer",
+    "Streamer",
+    "LidarLensBenchmark",
+    # Submodules
+    "filters",
+    "terrain",
+    "geometry",
+    "cluster",
+    "registration",
+    "mapping",
+    "augment",
+    "models",
+    "sim2real",
+    "scenegraph",
+    "agent",
+    "deploy",
+    "ros2",
+    "vis",
+    "dataset",
+    "io",
+    # Legacy
+    "read",
+    "save",
+    "read_header",
+    "read_bounds",
+    "voxel_downsample",
+    "uniform_downsample",
+    "random_downsample",
+    "denoise",
+    "downsample",
+    "remove_statistical_outliers",
+    "remove_radius_outliers",
+    "segment_plane",
+    "extract_ground",
+    "cluster_dbscan",
+    "extract_clusters",
+    "segment_heuristic",
+    "compute_statistics",
+    "stats",
+    "elevation_histogram",
+    "compare_clouds",
+    "point_density",
+    "roughness",
+    "cross_section",
+    "compute_volume",
+    "ASPRS_CLASSES",
+    "reclassify_in_polygon",
+    "reclassify_by_elevation",
+    "get_class_distribution",
+    "merge_classes",
 ]

@@ -51,8 +51,8 @@ def test_scale(simple_pcd):
 
 def test_register_icp():
     """ICP should align a translated cloud to the original."""
-    from lidarlens.geometry import register_icp
-    import open3d as o3d
+    import pytest
+    o3d = pytest.importorskip('open3d')
 
     np.random.seed(42)
     pts = np.random.rand(200, 3)
@@ -78,7 +78,8 @@ def test_convex_hull(simple_pcd):
 def test_voxelize(simple_pcd):
     """Voxelization should return a VoxelGrid."""
     from lidarlens.geometry import voxelize
-    import open3d as o3d
+    import pytest
+    o3d = pytest.importorskip('open3d')
 
     vg = voxelize(simple_pcd, voxel_size=0.2)
     assert isinstance(vg, o3d.geometry.VoxelGrid)

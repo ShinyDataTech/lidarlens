@@ -3,11 +3,18 @@ CRS utilities — coordinate reference system detection, transformation, and
 WKT VLR creation for LAS files.
 """
 
+from __future__ import annotations
+
 from typing import List, Optional, Tuple
 
 import numpy as np
-import laspy
-from laspy import VLR
+
+try:
+    import laspy
+    from laspy import VLR
+except ImportError:
+    laspy = None
+    VLR = object
 
 try:
     import pyproj

@@ -1,14 +1,36 @@
+from __future__ import annotations
+
+try:
+    import open3d as o3d
+except ImportError:
+    class _MockO3D:
+        class geometry:
+            PointCloud = object
+            AxisAlignedBoundingBox = object
+            TriangleMesh = object
+            VoxelGrid = object
+        class utility:
+            Vector3dVector = object
+        class visualization:
+            @staticmethod
+            def draw_geometries(*args, **kwargs):
+                pass
+    o3d = _MockO3D()
+
+try:
+    import laspy
+except ImportError:
+    laspy = None
+
 """
 Analysis module — statistics, histograms, cloud-to-cloud comparison,
 density analysis, roughness, cross-section, and volume computation.
 """
 
+
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
-import open3d as o3d
-
-
 # ── Statistics ───────────────────────────────────────────────────────────────
 
 

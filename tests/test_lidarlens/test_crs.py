@@ -6,6 +6,7 @@ import pytest
 
 def test_create_wkt_vlr():
     """WKT VLR should have correct user_id, record_id, and data."""
+    pytest.importorskip("laspy")
     from lidarlens.crs import create_wkt_vlr
 
     wkt = 'GEOGCS["GCS_WGS_1984"]'
@@ -17,6 +18,7 @@ def test_create_wkt_vlr():
 
 def test_transform_bounds():
     """Bounding box transform should return 4 corners."""
+    pytest.importorskip("pyproj")
     from lidarlens.crs import transform_bounds
 
     bounds = {"x_min": 0, "x_max": 100, "y_min": 0, "y_max": 100}
@@ -28,6 +30,7 @@ def test_transform_bounds():
 
 def test_transform_coordinates():
     """Coordinate transform should change values."""
+    pytest.importorskip("pyproj")
     from lidarlens.crs import transform_coordinates
 
     coords = np.array([[500000, 0, 100]])

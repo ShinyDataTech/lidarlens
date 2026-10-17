@@ -1,7 +1,8 @@
 """Tests for lidarlens.filtering — spatial and attribute filters."""
 
 import numpy as np
-import open3d as o3d
+import pytest
+o3d = pytest.importorskip('open3d')
 import pytest
 
 

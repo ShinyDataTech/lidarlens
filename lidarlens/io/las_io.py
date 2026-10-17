@@ -1,33 +1,56 @@
-"""
-I/O module — read and write LAS/LAZ point cloud files.
-"""
+from __future__ import annotations
+
+try:
+    import open3d as o3d
+except ImportError:
+    class _MockO3D:
+        class geometry:
+            PointCloud = object
+            AxisAlignedBoundingBox = object
+            TriangleMesh = object
+            VoxelGrid = object
+        class utility:
+            Vector3dVector = object
+        class visualization:
+            @staticmethod
+            def draw_geometries(*args, **kwargs):
+                pass
+    o3d = _MockO3D()
+
+try:
+    import laspy
+except ImportError:
+    laspy = None
+
+"""I/O module — read and write LAS/LAZ point cloud files with backward compatibility."""
 
 from typing import Dict, List, Optional, Tuple
-
 import numpy as np
-import open3d as o3d
-import laspy
+
+_HAS_O3D = False
+try:
+    import open3d as o3d
+    _HAS_O3D = True
+except ImportError:
+    o3d = None
+
+_HAS_LASPY = False
+try:
+    import laspy
+    _HAS_LASPY = True
+except ImportError:
+    laspy = None
 
 from lidarlens.crs import DEFAULT_WKT, create_wkt_vlr
 
 
 def read(
     path: str,
-) -> Tuple[o3d.geometry.PointCloud, laspy.LasHeader, List, Optional[str]]:
-    """Load a LAS/LAZ file and return an Open3D PointCloud plus metadata.
+) -> Tuple[Any, Any, List, Optional[str]]:
+    """Load a LAS/LAZ file and return an Open3D PointCloud plus metadata."""
+    if not _HAS_LASPY or laspy is None:
+        raise ImportError("laspy is required to read LAS/LAZ files. Install via pip install laspy[lazrs].")
 
-    Args:
-        path: Path to the ``.las`` or ``.laz`` file.
-
-    Returns:
-        A tuple of ``(pcd, header, vlrs, wkt)`` where:
-
-        - **pcd**: ``open3d.geometry.PointCloud`` with points and (optionally)
-          RGB colours.
-        - **header**: The original ``laspy.LasHeader``.
-        - **vlrs**: List of ``laspy.VLR`` objects.
-        - **wkt**: Detected WKT CRS string, or ``None``.
-    """
     with laspy.open(path) as f:
         header = f.header
         vlrs = list(f.header.vlrs)
@@ -46,50 +69,47 @@ def read(
             except Exception:
                 pass
 
-    # Build Open3D PointCloud
     points = np.vstack([las.x, las.y, las.z]).T
-    pcd = o3d.geometry.PointCloud()
-    pcd.points = o3d.utility.Vector3dVector(points)
+    if _HAS_O3D and o3d is not None:
+        pcd = o3d.geometry.PointCloud()
+        pcd.points = o3d.utility.Vector3dVector(points)
 
-    # Colours
-    try:
-        if hasattr(las, "red"):
-            red = np.array(las.red, dtype=np.float64)
-            green = np.array(las.green, dtype=np.float64)
-            blue = np.array(las.blue, dtype=np.float64)
+        try:
+            if hasattr(las, "red"):
+                red = np.array(las.red, dtype=np.float64)
+                green = np.array(las.green, dtype=np.float64)
+                blue = np.array(las.blue, dtype=np.float64)
 
-            max_val = max(red.max(), green.max(), blue.max(), 1)
-            scale = 65535.0 if max_val > 255 else 255.0
+                max_val = max(red.max(), green.max(), blue.max(), 1)
+                scale = 65535.0 if max_val > 255 else 255.0
 
-            colors = np.vstack([red / scale, green / scale, blue / scale]).T
-            pcd.colors = o3d.utility.Vector3dVector(colors)
-    except Exception:
-        pass
+                colors = np.vstack([red / scale, green / scale, blue / scale]).T
+                pcd.colors = o3d.utility.Vector3dVector(colors)
+        except Exception:
+            pass
+    else:
+        pcd = points
 
     return pcd, header, vlrs, wkt
 
 
 def save(
-    pcd: o3d.geometry.PointCloud,
+    pcd: Any,
     output_path: str,
     *,
-    header: Optional[laspy.LasHeader] = None,
+    header: Optional[Any] = None,
     vlrs: Optional[List] = None,
     wkt: Optional[str] = None,
     extra_dims: Optional[Dict[str, np.ndarray]] = None,
 ) -> None:
-    """Save an Open3D PointCloud to a LAS/LAZ file.
+    """Save a PointCloud to a LAS/LAZ file."""
+    if not _HAS_LASPY or laspy is None:
+        raise ImportError("laspy is required to save LAS/LAZ files.")
 
-    Args:
-        pcd: The point cloud to save.
-        output_path: Destination file path (``.las`` or ``.laz``).
-        header: Original LAS header to reuse offsets/scales (optional).
-        vlrs: Original VLRs to preserve (optional).
-        wkt: WKT CRS string to embed (optional).
-        extra_dims: Mapping ``{name: numpy_array}`` of extra per-point
-            dimensions (e.g. ``ClusterID``).
-    """
-    points = np.asarray(pcd.points)
+    if hasattr(pcd, "points"):
+        points = np.asarray(pcd.points)
+    else:
+        points = np.asarray(pcd)
 
     new_header = laspy.LasHeader(point_format=3, version="1.2")
     new_header.scales = np.array([0.001, 0.001, 0.001])
@@ -99,7 +119,6 @@ def save(
         new_header.offsets = header.offsets
         new_header.scales = header.scales
 
-    # Filter out COPC VLRs and add remaining
     filtered_vlrs = []
     if vlrs:
         for vlr in vlrs:
@@ -107,7 +126,6 @@ def save(
                 continue
             filtered_vlrs.append(vlr)
 
-    # Check if we already have a WKT VLR
     existing_wkt = any(
         getattr(v, "user_id", "") == "LASF_Projection"
         and getattr(v, "record_id", 0) == 2112
@@ -117,12 +135,10 @@ def save(
     for vlr in filtered_vlrs:
         new_header.vlrs.append(vlr)
 
-    # Add WKT VLR if not already present
     if not existing_wkt:
         target_wkt = wkt if wkt else DEFAULT_WKT
         new_header.vlrs.append(create_wkt_vlr(target_wkt))
 
-    # Register extra dimensions
     if extra_dims:
         for name, data in extra_dims.items():
             dtype = np.int32 if np.issubdtype(data.dtype, np.integer) else np.float64
@@ -133,7 +149,7 @@ def save(
     las.y = points[:, 1]
     las.z = points[:, 2]
 
-    if pcd.has_colors():
+    if hasattr(pcd, "has_colors") and pcd.has_colors():
         colors = (np.asarray(pcd.colors) * 65535).clip(0, 65535).astype(np.uint16)
         las.red = colors[:, 0]
         las.green = colors[:, 1]
@@ -147,15 +163,9 @@ def save(
 
 
 def read_header(path: str) -> Dict:
-    """Read only the header metadata from a LAS/LAZ file — no point data.
-
-    Args:
-        path: Path to the LAS/LAZ file.
-
-    Returns:
-        Dictionary with ``point_count``, ``point_format``, ``version``,
-        ``scales``, ``offsets``, ``mins``, ``maxs``.
-    """
+    """Read only header metadata from a LAS/LAZ file."""
+    if not _HAS_LASPY or laspy is None:
+        raise ImportError("laspy is required to read LAS/LAZ header.")
     with laspy.open(path) as f:
         h = f.header
         return {
@@ -170,15 +180,9 @@ def read_header(path: str) -> Dict:
 
 
 def read_bounds(path: str) -> Dict:
-    """Read just the spatial bounding box from a LAS/LAZ file header.
-
-    Args:
-        path: Path to the LAS/LAZ file.
-
-    Returns:
-        Dictionary with ``min_x``, ``max_x``, ``min_y``, ``max_y``,
-        ``min_z``, ``max_z``.
-    """
+    """Read spatial bounding box from LAS/LAZ file."""
+    if not _HAS_LASPY or laspy is None:
+        raise ImportError("laspy is required to read bounds.")
     with laspy.open(path) as f:
         h = f.header
         return {

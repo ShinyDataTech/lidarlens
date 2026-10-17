@@ -1,3 +1,27 @@
+from __future__ import annotations
+
+try:
+    import open3d as o3d
+except ImportError:
+    class _MockO3D:
+        class geometry:
+            PointCloud = object
+            AxisAlignedBoundingBox = object
+            TriangleMesh = object
+            VoxelGrid = object
+        class utility:
+            Vector3dVector = object
+        class visualization:
+            @staticmethod
+            def draw_geometries(*args, **kwargs):
+                pass
+    o3d = _MockO3D()
+
+try:
+    import laspy
+except ImportError:
+    laspy = None
+
 """
 Classification module — ASPRS class definitions, polygon-based
 reclassification, and class distribution analysis.
@@ -7,9 +31,15 @@ import os
 import uuid
 from typing import Dict, List, Optional, Tuple
 
-import numpy as np
-import laspy
-from matplotlib.path import Path as mplPath
+try:
+    import laspy
+except ImportError:
+    laspy = None
+
+try:
+    from matplotlib.path import Path as mplPath
+except ImportError:
+    mplPath = None
 
 try:
     import pyproj
