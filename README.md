@@ -142,12 +142,6 @@ cd pylidarlens
 pip install -e .
 ```
 
-Or install directly via `pip` from PyPI:
-
-```bash
-pip install lidarlens
-```
-
 ### 3. Modular Feature Extras
 
 Install optional dependencies tailored to your engineering workflow:
