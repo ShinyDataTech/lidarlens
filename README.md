@@ -1,5 +1,6 @@
 # LidarLens (`pylidarlens`)
 
+[![PyPI - Version](https://img.shields.io/pypi/v/lidarlens.svg)](https://pypi.org/project/lidarlens/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![C++20](https://img.shields.io/badge/C%2B%2B-20-blueviolet.svg)](https://en.cppreference.com/w/cpp/20)
 [![ROS 2](https://img.shields.io/badge/ROS%202-Humble%20%7C%20Iron-orange.svg)](https://docs.ros.org/)
@@ -131,7 +132,13 @@ pylidarlens/
 
 ### 2. Standard Installation
 
-Clone the repository and install the core package in editable mode:
+Install directly via `pip` from PyPI:
+
+```bash
+pip install lidarlens
+```
+
+Or clone the repository and install the core package in editable mode:
 
 ```bash
 # Clone the repository
