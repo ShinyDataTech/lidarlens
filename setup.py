@@ -14,7 +14,7 @@ except ImportError:
 if has_pybind:
     extra_compile_args = []
     if sys.platform == "win32":
-        extra_compile_args = ["/std:c++20", "/O2", "/EHsc"]
+        extra_compile_args = ["/std:c++20", "/O2", "/EHsc", "/utf-8"]
     else:
         extra_compile_args = ["-std=c++20", "-O3", "-march=native"]
 
@@ -27,6 +27,7 @@ if has_pybind:
             "src/filters/temporal_sor.cpp",
             "src/registration/gicp.cpp",
         ],
+        include_dirs=["src"],
         extra_compile_args=extra_compile_args,
         cxx_std=20,
     )

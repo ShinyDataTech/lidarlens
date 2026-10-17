@@ -60,8 +60,8 @@ public:
     // to Python as a (N, 4) float32 ndarray with strides (16, 4) bytes.
     py::array_t<float> get_numpy_view() {
         return py::array_t<float>(
-            { static_cast<ssize_t>(data.size()), static_cast<ssize_t>(4) },
-            { static_cast<ssize_t>(sizeof(PointXYZI)), static_cast<ssize_t>(sizeof(float)) },
+            { static_cast<py::ssize_t>(data.size()), static_cast<py::ssize_t>(4) },
+            { static_cast<py::ssize_t>(sizeof(PointXYZI)), static_cast<py::ssize_t>(sizeof(float)) },
             reinterpret_cast<float*>(data.data()),
             py::cast(this)
         );

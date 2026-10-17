@@ -39,7 +39,7 @@ public:
         size_t cols = static_cast<size_t>(buf.shape[1]);
         const float* ptr = static_cast<const float*>(buf.ptr);
 
-        py::array_t<float> cov_array({static_cast<ssize_t>(n), static_cast<ssize_t>(3), static_cast<ssize_t>(3)});
+        py::array_t<float> cov_array({static_cast<py::ssize_t>(n), static_cast<py::ssize_t>(3), static_cast<py::ssize_t>(3)});
         auto cov_buf = cov_array.request();
         float* cov_ptr = static_cast<float*>(cov_buf.ptr);
         std::fill(cov_ptr, cov_ptr + n * 9, 0.0f);
