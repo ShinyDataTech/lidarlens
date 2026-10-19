@@ -621,11 +621,11 @@ print(f"Memory Copy Bandwidth:     {report['copy_bandwidth_gbps']:.2f} GB/s")
 If you use **LidarLens** or the accompanying textbook in your academic research or engineering projects, please cite:
 
 ```bibtex
-@book{liu2025lidarlens,
+@book{liu2026lidarlens,
   title     = {Python三维空间感知与机器人视觉：从LiDAR工程到Agentic AI实战},
   author    = {Liu, Wei},
   publisher = {Posts & Telecom Press (人民邮电出版社)},
-  year      = {2025},
+  year      = {2026},
   url       = {https://github.com/ShinyDataTech/lidarlens}
 }
 ```
